@@ -1,10 +1,14 @@
 package org.pt.service.impl;
 
+import com.baomidou.mybatisplus.extension.service.IService;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.pt.dto.LoginDto;
 import org.pt.components.Response;
 import org.pt.exception.InvitationException;
 import org.pt.exception.LoginException;
+import org.pt.mapper.UserMapper;
+import org.pt.model.User;
 import org.pt.utils.JwtToken;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.HashOperations;
@@ -12,6 +16,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
@@ -20,7 +25,10 @@ import static org.pt.config.Constants.IVCODE_EXPIRE_DAY;
 
 @Slf4j
 @Service
-public class UserServiceImpl {
+public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IService<User> {
+
+    @Autowired
+    private UserMapper userMapper;
 
     @Autowired
     private RedisTemplate<String, Object> redisTemplate;
@@ -76,5 +84,10 @@ public class UserServiceImpl {
 
         return Response.success(map);
 
+    }
+
+    public Response<List<User>> getUsers()
+    {
+        return Response.success(userMapper.selectList(null));
     }
 }

@@ -5,13 +5,14 @@ import org.pt.components.Response;
 import org.pt.dto.LoginDto;
 import org.pt.exception.InvitationException;
 import org.pt.exception.LoginException;
+import org.pt.model.User;
 import org.pt.service.impl.UserServiceImpl;
 import org.pt.utils.JwtToken;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 
@@ -22,6 +23,12 @@ public class UserController {
 
     @Autowired
     private UserServiceImpl userServiceImpl;
+
+
+    @GetMapping("/test")
+    public Response<List<User>> getUsers() {
+        return userServiceImpl.getUsers();
+    }
 
     @PostMapping("login")
     public Response<Map<String, String>> login(@RequestBody LoginDto loginDto) throws LoginException {
