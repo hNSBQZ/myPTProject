@@ -18,7 +18,12 @@ public class UserExceptionHandler {
 
     @ExceptionHandler(InvitationException.class)
     public Response<?> ErrorHandler(InvitationException e) {
-        return Response.error(e.getMessage(), MsgEnum.LOGIN_ERROR.getCode());
+        return Response.error(e.getMessage(), MsgEnum.INVITATION_ERROR.getCode());
+    }
+
+    @ExceptionHandler(RegisterException.class)
+    public Response<?> ErrorHandler(RegisterException e) {
+        return Response.error(e.getMessage(), MsgEnum.IREGISTER_ERROR.getCode());
     }
 
 }

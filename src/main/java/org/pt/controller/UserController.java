@@ -5,6 +5,7 @@ import org.pt.components.Response;
 import org.pt.dto.LoginDto;
 import org.pt.exception.InvitationException;
 import org.pt.exception.LoginException;
+import org.pt.exception.RegisterException;
 import org.pt.model.User;
 import org.pt.service.impl.UserServiceImpl;
 import org.pt.utils.JwtToken;
@@ -28,6 +29,11 @@ public class UserController {
     @GetMapping("/test")
     public Response<List<User>> getUsers() {
         return userServiceImpl.getUsers();
+    }
+
+    @GetMapping("verifyCode")
+    public Response<Map<String,String>> verifyCode(@RequestParam String username,@RequestParam String emailAddr,@RequestParam int isLogin) throws LoginException, RegisterException {
+        return userServiceImpl.getVerifyCode(username,emailAddr,isLogin);
     }
 
     @PostMapping("login")

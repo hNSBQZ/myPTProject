@@ -14,8 +14,8 @@ public class User {
     @TableId
     private Integer id;
 
-    @TableField("user_id") // 用户ID
-    private String userId;
+    @TableField("username") // 用户ID
+    private String username;
 
     @TableField("email") // 邮箱
     private String email;

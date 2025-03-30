@@ -12,7 +12,7 @@ public enum MsgEnum {
     AUTH_ERROR(502, "授权失败!"),
     LOGIN_ERROR(503, "登陆错误"),
 
-
+    IREGISTER_ERROR(504, "注册错误"),
 
     DATABASE_OPERATION_FAILED(504, "数据库操作失败");
     private int code;
