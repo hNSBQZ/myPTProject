@@ -75,3 +75,23 @@ INSERT INTO users (
              500,
              2
          );
+
+INSERT INTO users (
+    username, email, password, pass_key,is_admin, register_time, bio, age, school, college, total_upload, total_download, invite_count, magic_value, work_count
+) VALUES (
+             'hqz',
+             '3101236995@qq.com',
+             '123456',
+             'passkey4',
+             false,
+             NOW(),
+             'This is a test user.',
+             25,
+             'Test University',
+             'College of Engineering',
+             100,
+             50,
+             3,
+             500,
+             2
+         );

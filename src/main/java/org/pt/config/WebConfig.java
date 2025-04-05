@@ -5,6 +5,7 @@ import com.alibaba.fastjson.serializer.SerializerFeature;
 import com.alibaba.fastjson.support.config.FastJsonConfig;
 import com.alibaba.fastjson.support.spring.FastJsonHttpMessageConverter;
 import org.pt.components.interceptor.TokenInterceptor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.MediaType;
 import org.springframework.http.converter.HttpMessageConverter;
@@ -21,6 +22,8 @@ import java.util.List;
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
 
+    @Autowired
+    private TokenInterceptor tokenInterceptor;
     private static final List<String> WHITE_LIST = new ArrayList<>();
     static {
         WHITE_LIST.add("/user/login");
@@ -34,7 +37,7 @@ public class WebConfig implements WebMvcConfigurer {
     public void addInterceptors(InterceptorRegistry registry) {
         // temporarily aborted
         registry
-                .addInterceptor(new TokenInterceptor()) // 以下放行
+                .addInterceptor(tokenInterceptor) // 以下放行
                 .excludePathPatterns(WHITE_LIST)
                 .addPathPatterns("/**"); // 拦截所有，除了以上
     }

@@ -6,6 +6,7 @@ public enum MsgEnum {
 
     TOKEN_ERROR(301,"TOKEN验证失败"),
     TOKEN_EXPIRE(302,"TOKEN过期"),
+    TOKEN_USED(303,"账号已在其他地方登录"),
 
     INVITATION_ERROR(401,"邀请人存在"),
 

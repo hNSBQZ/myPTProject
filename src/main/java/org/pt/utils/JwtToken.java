@@ -18,8 +18,7 @@ import java.util.HashMap;
 @Slf4j
 public class JwtToken {
     public static final String TOKEN_HEADER = "Authorization";
-    private static final int AMOUNT = 7 * 24;
-    private static HashMap<String, String> userInfo = new HashMap<>();
+    public static final int AMOUNT = 24;
     /**
      * 生成token
      *
@@ -52,10 +51,6 @@ public class JwtToken {
         JWT.require(Algorithm.HMAC256(Constants.SECRET)).build().verify(token);
         // decode the token, save userinfo
         // TODO: complete the userinfo field according to the DB
-        var username = JwtToken.decode(token).getClaim("username").asString();
-        var isAdmin= JwtToken.decode(token).getClaim("isAdmin").asString();
-        userInfo.put("username", username);
-        userInfo.put("isAdmin",isAdmin);
     }
 
     /**
@@ -79,7 +74,11 @@ public class JwtToken {
         return JwtToken.decode(token);
     }
 
-    public static String getUserInfo(String field){
-        return userInfo.get(field);
+    public static String getUsername(String token) {
+        return decode(token).getClaim("username").asString();
+    }
+
+    public static boolean isAdmin(String token) {
+        return Boolean.parseBoolean(decode(token).getClaim("isAdmin").asString());
     }
 }

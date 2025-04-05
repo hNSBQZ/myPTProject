@@ -42,18 +42,12 @@ public class UserController {
     }
 
     @GetMapping("getInvitationCode")
-    public Response<Map<String, String>> getInvitationCode(@RequestParam int remaining) throws InvitationException
+    public Response<Map<String, String>> getInvitationCode(@RequestParam String token, @RequestParam int remaining) throws InvitationException
     {
-        String username=JwtToken.getUserInfo("username");
-        String isAdmin=JwtToken.getUserInfo("isAdmin");
+        String username=JwtToken.getUsername(token);
+        Boolean isAdmin=JwtToken.isAdmin(token);
         return userServiceImpl.getInvitationCode(username,remaining,isAdmin);
     }
 
-    @PostMapping("whoCame")
-    public Response<Map<String, String>> whoCame(@RequestBody LoginDto loginDto) throws LoginException {
-        var map=new LinkedHashMap<String,String>();
-        map.put("username", JwtToken.getUserInfo("username"));
-        return Response.success(map);
-    }
 
 }

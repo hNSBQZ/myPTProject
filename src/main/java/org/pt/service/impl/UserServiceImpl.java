@@ -1,5 +1,6 @@
 package org.pt.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -40,16 +41,42 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IS
     @Autowired
     private RedisTemplate<String, Object> redisTemplate;
 
-    public Response<Map<String, String>> login(LoginDto loginDto) throws LoginException {
+    public Response<Map<String, String>>register(){
         var map=new LinkedHashMap<String,String>();
-        if(loginDto.getUsername().equals("admin")&&loginDto.getPassword().equals("admin")) {
-            map.put("username", loginDto.getUsername());
-            map.put("isAdmin","True");
-            String token= JwtToken.create(map);
-            map.put("token", token);
-            return Response.success(map);
-        }
-        throw new LoginException("用户名不存在或密码错误");
+        return Response.success(map);
+    }
+
+    public Response<Map<String, String>> login(LoginDto loginDto) throws LoginException {
+        //验证验证码
+        Object obStoredCode= redisTemplate.opsForValue().get(loginDto.getEmail());
+        if(obStoredCode==null){throw new LoginException("验证码过期");}
+        String storedCode= (String) obStoredCode;
+        if(!storedCode.equals(loginDto.getVerificationCode())){throw new LoginException("验证码错误");}
+
+        LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(User::getUsername, loginDto.getUsername());
+        User user = userMapper.selectOne(queryWrapper);
+        if(user==null){throw new LoginException("用户不存在");}
+
+        String password=user.getPassword();
+        String email=user.getEmail();
+        if(!password.equals(loginDto.getPassword())){throw new LoginException("密码不正确");}
+        if(!email.equals(loginDto.getEmail())){throw new LoginException("邮箱与用户名不匹配");}
+
+        var map=new LinkedHashMap<String,String>();
+        map.put("username", user.getUsername());
+        map.put("email", user.getEmail());
+        map.put("isAdmin", String.valueOf(user.getIsAdmin()));
+        String token = JwtToken.create(map);
+
+        //用redis存储token，实现唯一登录
+        redisTemplate.opsForValue().set(
+                "user:latest_token:" + user.getUsername(),
+                token
+        );
+        redisTemplate.expire("user:latest_token:" + user.getUsername(), JwtToken.AMOUNT, TimeUnit.HOURS);
+        map.put("token", token);
+        return Response.success(map);
     }
 
     public Response<Map<String,String>> getVerifyCode(String username,String emailAdd,int isLogin) throws LoginException, RegisterException {
@@ -68,16 +95,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IS
         }
 
         String verifyCode =String.valueOf(new Random().nextInt(899999)+100000);
-        String verifyCodeKey = "verifyCode:" + verifyCode;
-        while(redisTemplate.hasKey(verifyCodeKey))
-        {
-            //邀请码存在就重新生成
-            verifyCode=String.valueOf(new Random().nextInt(899999)+100000);
-            verifyCodeKey = "verifyCode:" + verifyCode;
-        }
 
-        redisTemplate.opsForValue().set(verifyCodeKey, emailAdd);
-        redisTemplate.expire(verifyCodeKey, VECODE_EXPIRE_SECOND, TimeUnit.SECONDS);
+        redisTemplate.opsForValue().set(emailAdd, verifyCode);
+        redisTemplate.expire(emailAdd, VECODE_EXPIRE_SECOND, TimeUnit.SECONDS);
 
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(MAIL_SENDER); // 发件人
@@ -93,7 +113,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IS
         return Response.success(map);
     }
 
-    public Response<Map<String, String>> getInvitationCode(String inviter,int remaining,String isAdmin) throws InvitationException {
+    public Response<Map<String, String>> getInvitationCode(String inviter,int remaining,Boolean isAdmin) throws InvitationException {
         String inviterKey = "invitation:inviter:" + inviter;
         if (redisTemplate.hasKey(inviterKey)) {
             throw new InvitationException("邀请人已存在");
@@ -112,7 +132,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IS
         redisTemplate.opsForValue().set(inviterKey, invitationCode);
 
         //管理员才可设置多次使用的邀请码
-        if(!isAdmin.equals("True"))remaining=1;
+        if(!isAdmin)remaining=1;
 
         // 存储邀请码的详细信息
         HashOperations<String, String, Object> hashOps = redisTemplate.opsForHash();

@@ -26,6 +26,9 @@ public class User {
     @TableField("pass_key") // PassKey
     private String passKey;
 
+    @TableField("is_admin")
+    private Boolean isAdmin;
+
     @TableField("register_time") // 注册时间
     private Date registerTime;
 
