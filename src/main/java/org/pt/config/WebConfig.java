@@ -28,7 +28,6 @@ public class WebConfig implements WebMvcConfigurer {
     static {
         WHITE_LIST.add("/user/login");
         WHITE_LIST.add("/user/register");
-        WHITE_LIST.add("/user/test");
         WHITE_LIST.add("/user/verifyCode");
         WHITE_LIST.add("/error");
     }

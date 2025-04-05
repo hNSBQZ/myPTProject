@@ -26,4 +26,9 @@ public class UserExceptionHandler {
         return Response.error(e.getMessage(), MsgEnum.IREGISTER_ERROR.getCode());
     }
 
+    @ExceptionHandler(UserException.class)
+    public Response<?> ErrorHandler(UserException e) {
+        return Response.error(e.getMessage(), MsgEnum.IREGISTER_ERROR.getCode());
+    }
+
 }

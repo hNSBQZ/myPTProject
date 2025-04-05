@@ -15,6 +15,8 @@ public enum MsgEnum {
 
     IREGISTER_ERROR(504, "注册错误"),
 
+    USER_ERROR(505,"用户错误"),
+
     DATABASE_OPERATION_FAILED(504, "数据库操作失败");
     private int code;
     private String message;

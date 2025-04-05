@@ -78,6 +78,10 @@ public class JwtToken {
         return decode(token).getClaim("username").asString();
     }
 
+    public static Integer getId(String token) {
+        return Integer.parseInt(decode(token).getClaim("id").asString());
+    }
+
     public static boolean isAdmin(String token) {
         return Boolean.parseBoolean(decode(token).getClaim("isAdmin").asString());
     }

@@ -2,10 +2,11 @@ package org.pt.controller;
 
 import lombok.extern.slf4j.Slf4j;
 import org.pt.components.Response;
-import org.pt.dto.LoginDto;
+import org.pt.dto.*;
 import org.pt.exception.InvitationException;
 import org.pt.exception.LoginException;
 import org.pt.exception.RegisterException;
+import org.pt.exception.UserException;
 import org.pt.model.User;
 import org.pt.service.impl.UserServiceImpl;
 import org.pt.utils.JwtToken;
@@ -26,9 +27,9 @@ public class UserController {
     private UserServiceImpl userServiceImpl;
 
 
-    @GetMapping("/test")
-    public Response<List<User>> getUsers() {
-        return userServiceImpl.getUsers();
+    @GetMapping("getUserInfo")
+    public Response<UserInfoDto> getUsers(@RequestParam String token, @RequestParam String username) throws UserException {
+        return userServiceImpl.getUserInfo(username);
     }
 
     @GetMapping("verifyCode")
@@ -37,16 +38,21 @@ public class UserController {
     }
 
     @PostMapping("login")
-    public Response<Map<String, String>> login(@RequestBody LoginDto loginDto) throws LoginException {
+    public Response<LoginResponseDto> login(@RequestBody LoginDto loginDto) throws LoginException {
         return userServiceImpl.login(loginDto);
     }
 
     @GetMapping("getInvitationCode")
-    public Response<Map<String, String>> getInvitationCode(@RequestParam String token, @RequestParam int remaining) throws InvitationException
+    public Response<InvitationDto> getInvitationCode(@RequestParam String token, @RequestParam int remaining) throws InvitationException
     {
-        String username=JwtToken.getUsername(token);
+        Integer id=JwtToken.getId(token);
         Boolean isAdmin=JwtToken.isAdmin(token);
-        return userServiceImpl.getInvitationCode(username,remaining,isAdmin);
+        return userServiceImpl.getInvitationCode(id,remaining,isAdmin);
+    }
+
+    @PostMapping("updateInfo")
+    public Response<List<String>> updateInfo(@RequestBody UpdateInfoDto updateInfoDto) throws UserException {
+        return userServiceImpl.updateUserInfo(updateInfoDto);
     }
 
 

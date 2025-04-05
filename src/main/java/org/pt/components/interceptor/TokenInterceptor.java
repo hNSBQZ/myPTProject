@@ -33,13 +33,17 @@ public class TokenInterceptor implements HandlerInterceptor {
 
         try {
             JwtToken.verify(token);
-            String username = JwtToken.getUsername(token);
+            Integer id = JwtToken.getId(token);
             String storedToken=redisTemplate.opsForValue().get(
-                    "user:latest_token:" + username
+                    "user:latest_token:" + id
             );
+            storedToken = storedToken.replaceAll("^\"|\"$", "");
             //登陆过期
             if(storedToken==null){os.write(JSON.toJSONString(Response.error(MsgEnum.TOKEN_EXPIRE.getMessage(), MsgEnum.TOKEN_EXPIRE.getCode())).getBytes());return false;}
-            if(!storedToken.equals(token)){os.write(JSON.toJSONString(Response.error(MsgEnum.TOKEN_USED.getMessage(), MsgEnum.TOKEN_USED.getCode())).getBytes());return false;}
+            if(!storedToken.equals(token)){
+                os.write(JSON.toJSONString(Response.error(MsgEnum.TOKEN_USED.getMessage(), MsgEnum.TOKEN_USED.getCode())).getBytes());
+                return false;
+            }
             log.info("in token interceptor, this url is {}, valid", uri);
             return true;
         } catch (TokenExpiredException e) {

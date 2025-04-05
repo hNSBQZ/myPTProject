@@ -2,14 +2,16 @@ package org.pt.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.extern.slf4j.Slf4j;
-import org.pt.dto.LoginDto;
+import org.pt.dto.*;
 import org.pt.components.Response;
 import org.pt.exception.InvitationException;
 import org.pt.exception.LoginException;
 import org.pt.exception.RegisterException;
+import org.pt.exception.UserException;
 import org.pt.mapper.UserMapper;
 import org.pt.model.User;
 import org.pt.utils.JwtToken;
@@ -20,10 +22,7 @@ import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import static org.pt.config.Constants.*;
@@ -46,7 +45,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IS
         return Response.success(map);
     }
 
-    public Response<Map<String, String>> login(LoginDto loginDto) throws LoginException {
+    public Response<LoginResponseDto> login(LoginDto loginDto) throws LoginException {
         //验证验证码
         Object obStoredCode= redisTemplate.opsForValue().get(loginDto.getEmail());
         if(obStoredCode==null){throw new LoginException("验证码过期");}
@@ -64,19 +63,29 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IS
         if(!email.equals(loginDto.getEmail())){throw new LoginException("邮箱与用户名不匹配");}
 
         var map=new LinkedHashMap<String,String>();
+        map.put("id", String.valueOf(user.getId()));
         map.put("username", user.getUsername());
         map.put("email", user.getEmail());
         map.put("isAdmin", String.valueOf(user.getIsAdmin()));
+
         String token = JwtToken.create(map);
+
+        LoginResponseDto loginResponseDto= new LoginResponseDto(
+                user.getId(),
+                user.getUsername(),
+                user.getEmail(),
+                user.getIsAdmin(),
+                token
+        );
 
         //用redis存储token，实现唯一登录
         redisTemplate.opsForValue().set(
-                "user:latest_token:" + user.getUsername(),
+                "user:latest_token:" + user.getId(),
                 token
         );
         redisTemplate.expire("user:latest_token:" + user.getUsername(), JwtToken.AMOUNT, TimeUnit.HOURS);
         map.put("token", token);
-        return Response.success(map);
+        return Response.success(loginResponseDto);
     }
 
     public Response<Map<String,String>> getVerifyCode(String username,String emailAdd,int isLogin) throws LoginException, RegisterException {
@@ -113,8 +122,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IS
         return Response.success(map);
     }
 
-    public Response<Map<String, String>> getInvitationCode(String inviter,int remaining,Boolean isAdmin) throws InvitationException {
-        String inviterKey = "invitation:inviter:" + inviter;
+    public Response<InvitationDto> getInvitationCode(Integer inviterId,int remaining,Boolean isAdmin) throws InvitationException {
+        String inviterKey = "invitation:inviter:" + inviterId;
         if (redisTemplate.hasKey(inviterKey)) {
             throw new InvitationException("邀请人已存在");
         }
@@ -136,7 +145,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IS
 
         // 存储邀请码的详细信息
         HashOperations<String, String, Object> hashOps = redisTemplate.opsForHash();
-        hashOps.put(invitationCodeKey, "inviter", inviter);
+        hashOps.put(invitationCodeKey, "inviter", inviterId);
         hashOps.put(invitationCodeKey, "invitationCode", invitationCode);
         hashOps.put(invitationCodeKey, "remaining", remaining);
 
@@ -144,17 +153,52 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IS
         redisTemplate.expire(inviterKey, IVCODE_EXPIRE_DAY, TimeUnit.DAYS);
         redisTemplate.expire(invitationCodeKey, IVCODE_EXPIRE_DAY, TimeUnit.DAYS);
 
-        var map=new LinkedHashMap<String,String>();
-        map.put("inviter", inviter);
-        map.put("remaining", String.valueOf(remaining));
-        map.put("invitationCode", invitationCode);
+        InvitationDto invitationDto = new InvitationDto(
+                inviterId,
+                remaining,
+                invitationCode
+        );
 
-        return Response.success(map);
+        return Response.success(invitationDto);
 
     }
 
-    public Response<List<User>> getUsers()
+    public Response<UserInfoDto> getUserInfo(String username) throws  UserException {
+        System.out.println("?"+username);
+        LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(User::getUsername, username);
+        User user = userMapper.selectOne(queryWrapper);
+        if(user==null){throw new UserException("用户不存在");}
+
+        UserInfoDto userinfo= new UserInfoDto(
+                user.getUsername(),
+                user.getEmail(),
+                user.getRegisterTime(),
+                user.getBio(),
+                user.getAge(),
+                user.getSchool(),
+                user.getCollege(),
+                user.getTotalUpload(),
+                user.getTotalDownload(),
+                user.getInviteCount(),
+                user.getMagicValue(),
+                user.getWorkCount()
+        );
+        return Response.success(userinfo);
+    }
+
+    public Response<List<String>>updateUserInfo(UpdateInfoDto updateInfoDto) throws UserException
     {
-        return Response.success(userMapper.selectList(null));
+        List<String> updateList = new ArrayList<>();
+        UpdateWrapper<User> updateWrapper = new UpdateWrapper<>();
+        updateWrapper.eq("id",updateInfoDto.getId());
+        updateInfoDto.getAge().ifPresent(age -> {updateList.add("age");updateWrapper.set("age",age);});
+        updateInfoDto.getSchool().ifPresent(school -> {updateList.add("school");updateWrapper.set("school",school);});
+        updateInfoDto.getCollege().ifPresent(college -> {updateList.add("college");updateWrapper.set("college",college);});
+        updateInfoDto.getBio().ifPresent(bio -> {updateList.add("bio");updateWrapper.set("bio",bio);});
+
+        userMapper.update(updateWrapper);
+
+        return Response.success(updateList);
     }
 }
